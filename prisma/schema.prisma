@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  apiKey       String?  @unique @map("api_key")
+  isActive     Boolean  @default(true) @map("is_active")
+  plan         Plan     @default(FREE)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  urls Url[]
+
+  @@map("users")
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model Url {
+  id           String    @id @default(uuid())
+  shortCode    String    @unique @map("short_code")
+  originalUrl  String    @map("original_url")
+  title        String?
+  description  String?
+  userId       String?   @map("user_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  isCustom     Boolean   @default(false) @map("is_custom")
+  passwordHash String?   @map("password_hash")
+  maxClicks    Int?      @map("max_clicks")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  clicks Click[]
+
+  @@index([shortCode])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("urls")
+}
+
+model Click {
+  id        String   @id @default(uuid())
+  urlId     String   @map("url_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  referer   String?
+  country   String?
+  city      String?
+  device    String?
+  browser   String?
+  os        String?
+  clickedAt DateTime @default(now()) @map("clicked_at")
+
+  url Url @relation(fields: [urlId], references: [id], onDelete: Cascade)
+
+  @@index([urlId])
+  @@index([clickedAt])
+  @@map("clicks")
+}
